@@ -3,7 +3,10 @@
 
 clear
 
+% Constants for the different sprites that appear on the spritesheet
 
+
+% Numbers correspond to the index in the spritesheet
 EMPTY = 1;
 BLUE = 4;
 GREEN = 5;
@@ -15,13 +18,18 @@ CYAN = 10;
 YELLOW = 11;
 BLANK = 12;
 
+% Least and Greatest out of all of the colors
+MIN_COLOR = 4;
+MAX_COLOR = 11;
+
 
 
 N_ROWS = 12;
 board = ones(N_ROWS, 4, 'int32');
 
-% The correct sequence. In real game this will be randomly generated.
-answer = [BLUE, RED, PURPLE, PINK];
+% The correct sequence, randomly generated.
+answer = randi(MAX_COLOR - MIN_COLOR + 1, [1, 4]) + MIN_COLOR - 1;
+
 
 % Create simpleGameEngine object
 ZOOM = 1.9;
@@ -30,42 +38,61 @@ SPRITE_HEIGHT = 58;
 BACKGROUND_COLOR = [255, 255, 255];
 current_scene = simpleGameEngine('Mastermind.png', SPRITE_HEIGHT, SPRITE_WIDTH, ZOOM, BACKGROUND_COLOR);
 
+
+% The row that the player is currently adjusting
 current_row = 1;
 
-% Initial board where nothing is correct
-board = enter_row(board, [CYAN, GREEN, ORANGE, YELLOW], current_row);
-current_row = current_row + 1;
+% The matrix that represents the right side of the game -- whether or not
+% the player is correct in their final decisions
+correct = ones(size(board));
+
+% The matrix that represents the player's choices
+board = enter_row(board, [MIN_COLOR, MIN_COLOR, MIN_COLOR, MIN_COLOR], current_row);
+
+% Draw the screen once before getting input
+update_screen(current_scene, board, correct);
+
+% Game loop
+while ~game_over(board, answer, current_row)
+    
+    [mouse_row, mouse_column, mouse_button] = getMouseInput(current_scene);
+
+    if mouse_row == current_row && mouse_column >= 1 && mouse_column <= 4 && mouse_button ~= 2
+        % Mouse is clicked in the left hand side of the game area on the
+        % current row
+        
+        % Increment the color if it is left clicked, decrement if right
+        % clicked
+
+        if mouse_button == 1
+            board(current_row, mouse_column) = board(current_row, mouse_column) + 1;
+            if board(current_row, mouse_column) > YELLOW
+                board(current_row, mouse_column) = BLUE;
+            end
+        else
+            board(current_row, mouse_column) = board(current_row, mouse_column) - 1;
+            if board(current_row, mouse_column) < BLUE
+                board(current_row, mouse_column) = YELLOW;
+            end
+        end
+    end
+
+    % Condition to determine when the player is ready to move onto the next
+    % row. Currently is clicking on the next row
+    if mouse_row == current_row + 1
+        correct = get_num_corrects(board, answer);
+        current_row = current_row + 1;
+
+        % Copy the row just submitted down to the next row
+        if current_row <= length(board)
+            board(current_row, :) = board(current_row - 1, :);
+        end
+    end
 
 
-update_screen(current_scene, board, get_num_corrects(board, answer));
-xlabel('Correct sequence: BLUE, RED, PURPLE, PINK');
+    update_screen(current_scene, board, correct);
 
-% Comment for the scene
-title('First image: board where nothing is correct');
-
-
-% Wait for any mouse input to proceed to next step
-getMouseInput(current_scene);
-
-% Show a board where there is two correct, but in the wrong spot
-board = enter_row(board, [YELLOW, CYAN, RED, BLUE], current_row);
-current_row = current_row + 1;
-update_screen(current_scene, board, get_num_corrects(board, answer));
-
-% Comment the scene
-title('Second image: board where there is two correct, but in the wrong spot');
-
-% Wait for mouse input to proceed to next step
-getMouseInput(current_scene);
-
-% Show a board with the correct sequence
-board = enter_row(board, [BLUE, RED, PURPLE, PINK], current_row);
-current_row = current_row + 1;
-update_screen(current_scene, board, get_num_corrects(board, answer));
-
-% Comment the scene
-title('Third image: board where all colors are in the correct spot');
-
+end
 
 
 function update_screen(scene, board, correct)
@@ -77,7 +104,7 @@ function update_screen(scene, board, correct)
 end
 
 function new_board = enter_row(board, input, current_row)
-    % Enters the row data into the board
+    % Enters the row data into the board matrix
 
     new_board = board;
 
@@ -105,29 +132,34 @@ function corrects = get_num_corrects(board, answer)
         column_corrects = 1;
 
         % Makes sure that nothing is double counted
-        used = zeros(1, 4);
+        used_answer = zeros(1, 4);
+        used_board = zeros(1, 4);
 
         % Take care of 3s.
         for column = 1:4
             if (board(row, column) == answer(column))
                 corrects(row, column_corrects) = 3;
                 column_corrects = column_corrects + 1;
-                used(column) = 1;
+                used_answer(column) = 1;
+                used_board(column) = 1;
             end
         end
         
         % Take care of 2s
         for column_board = 1:4
+            if used_board(column_board)
+                continue;
+            end
 
             % Use a linear search to determine if the current 
             correct = 0;
             for column_answers = 1:4
-                if used(column_answers)
+                if used_answer(column_answers)
                     continue;
                 end
                 if board(row, column_board) == answer(column_answers)
                     correct = 1;
-                    used(column_answers) = 1;
+                    used_answer(column_answers) = 1;
                     break;
                 end
             end
@@ -143,16 +175,25 @@ function corrects = get_num_corrects(board, answer)
     end
 end
 
+function over = game_over(board, answer, row_number)
+    % Determines whether or not the game is over
+
+    % Case where the player loses
+    if row_number >= length(board)
+        over = 1;
+    elseif row_number == 1
+        over = 0;
+    % Case where the player wins
+    else
+        over = 1;
+        for i = 1:4
+            if board(row_number - 1, i) ~= answer(i)
+                over = 0;
+                break;
+            end
+        end
+    end
+    
+end
 
 clear
-
-
-% Evaulate step:
-% This task ended up being fairly unchallenging, largely beacuse I already
-% have experience designing games in other programming languages. Although
-% I still had to look at the documentation for certain functions in the
-% simpleGameEngine.m file, this was just a small setback and the final
-% production of the game should go smoothly. For this reason, I do not at
-% the time have any questions for my teams members or instructional team.
-% I do not envision changing any part of the current plan, but I will if
-% needed.
