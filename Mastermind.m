@@ -55,8 +55,12 @@ update_screen(current_scene, board, correct);
 % Game loop
 while ~game_over(board, answer, current_row)
     
-    [mouse_row, mouse_column, mouse_button] = getMouseInput(current_scene);
-
+    try
+        [mouse_row, mouse_column, mouse_button] = getMouseInput(current_scene);
+    catch
+        break
+    end
+    
     if mouse_row == current_row && mouse_column >= 1 && mouse_column <= 4 && mouse_button ~= 2
         % Mouse is clicked in the left hand side of the game area on the
         % current row
