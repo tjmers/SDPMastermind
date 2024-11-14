@@ -55,6 +55,8 @@ update_screen(current_scene, board, correct);
 % Game loop
 while ~game_over(board, answer, current_row)
     
+    % Try catch block to catch the error when the window is closed while
+    % the game is still running
     try
         [mouse_row, mouse_column, mouse_button] = getMouseInput(current_scene);
     catch
@@ -70,13 +72,17 @@ while ~game_over(board, answer, current_row)
 
         if mouse_button == 1
             board(current_row, mouse_column) = board(current_row, mouse_column) + 1;
-            if board(current_row, mouse_column) > YELLOW
-                board(current_row, mouse_column) = BLUE;
+
+            % Make sure that if the click puts the color out of bounds
+            % (outside of the range [MIN_COLOR, MAX_COLOR]), reset to the
+            % minimum or maximum color value
+            if board(current_row, mouse_column) > MAX_COLOR
+                board(current_row, mouse_column) = MIN_COLOR;
             end
         else
             board(current_row, mouse_column) = board(current_row, mouse_column) - 1;
-            if board(current_row, mouse_column) < BLUE
-                board(current_row, mouse_column) = YELLOW;
+            if board(current_row, mouse_column) < MIN_COLOR
+                board(current_row, mouse_column) = MAX_COLOR;
             end
         end
     end
@@ -93,7 +99,7 @@ while ~game_over(board, answer, current_row)
         end
     end
 
-
+    % Draw the screen again
     update_screen(current_scene, board, correct);
 
 end
@@ -124,7 +130,10 @@ function corrects = get_num_corrects(board, answer)
     % 1 indicating incorrect
     % 2 indicating correct color but not position
     % 3 indication correct color and position
-
+    % The numbers above coorospond to their position in the spritesheet
+    % Note that this function analyzes the entire board rather than a
+    % specific row, meaning that the entire board is repeatedly
+    % recalcualted which may unnoticeably negatively impact performance
 
     corrects = ones(size(board));
     
@@ -158,6 +167,7 @@ function corrects = get_num_corrects(board, answer)
             % Use a linear search to determine if the current 
             correct = 0;
             for column_answers = 1:4
+                % Do not double count
                 if used_answer(column_answers)
                     continue;
                 end
