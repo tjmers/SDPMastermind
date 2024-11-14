@@ -10,7 +10,7 @@ Our implementation of this game via MATLAB uses the *simpleGameEngine* class to 
 
 ### Mouse Controls
 
-Left click - left click on a color to cycle fowards to the next color.
+Left click - left click on a color to cycle forwards to the next color.
 
 Right click - right click on a color to cycle backwards to the next color.
 
