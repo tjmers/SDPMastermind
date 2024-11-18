@@ -47,8 +47,7 @@ current_row = 1;
 correct = ones(size(board));
 
 % The matrix that represents the player's choices
-board = enter_row(board, [MIN_COLOR, MIN_COLOR, MIN_COLOR, MIN_COLOR], current_row);
-
+board(1, :) = [MIN_COLOR, MIN_COLOR, MIN_COLOR, MIN_COLOR];
 % Draw the screen once before getting input
 update_screen(current_scene, board, correct);
 
@@ -88,13 +87,16 @@ while ~game_over(board, answer, current_row)
     end
 
     % Condition to determine when the player is ready to move onto the next
-    % row. Currently is clicking on the next row
+    % row. Currently is clicking on the next row.
+    % TODO - since the last row must be clicked in order to move on, the
+    % last guess cannot be submitted
     if mouse_row == current_row + 1
-        correct = get_num_corrects(board, answer);
+        correct(current_row, :) = get_num_corrects(board, current_row, answer);
         current_row = current_row + 1;
 
-        % Copy the row just submitted down to the next row
-        if current_row <= length(board)
+        % Copy the row just submitted down to the next row if the game is
+        % not over
+        if ~game_over(board, answer, current_row)
             board(current_row, :) = board(current_row - 1, :);
         end
     end
@@ -107,83 +109,73 @@ end
 
 function update_screen(scene, board, correct)
     % Draws the current scene to the screen
+    % scene - the simpleGameEngine object with the mastermind spritesheet
+    % board - user game board
+    % correct - the right hand side of the game board that shows how the
+    %           user is correct with their guesses
 
     dividor = ones(length(board), 1) * 12;
     
     drawScene(scene, [board, dividor, correct]);
 end
 
-function new_board = enter_row(board, input, current_row)
-    % Enters the row data into the board matrix
-
-    new_board = board;
-
-    for i = 1:4
-        new_board(current_row, i) = input(i);
-    end
-
-end
-
-function corrects = get_num_corrects(board, answer)
+function corrects = get_num_corrects(board, row, answer)
     % Determines the number of correct user inputs
+    % board - user game board
+    % row - the row in the board to analyze
+    % answer - the correct sequence
     % Returns the matrix of the same size as the board, with:
     % 1 indicating incorrect
     % 2 indicating correct color but not position
     % 3 indication correct color and position
     % The numbers above coorospond to their position in the spritesheet
-    % Note that this function analyzes the entire board rather than a
-    % specific row, meaning that the entire board is repeatedly
-    % recalcualted which may unnoticeably negatively impact performance
 
-    corrects = ones(size(board));
+    corrects = ones([1, 4]);
     
-    % Repeat over each row
-    for row = 1:length(corrects)
 
-        % Index in the column array, we move left to right regardless of
-        % where we find matches
-        column_corrects = 1;
+    % Index in the column array, we move left to right regardless of
+    % where we find matches such that the corrects vector ends up being
+    % sorted in non ascending order
+    corrects_index = 1;
 
-        % Makes sure that nothing is double counted
-        used_answer = zeros(1, 4);
-        used_board = zeros(1, 4);
+    % Logical array to make sure that nothing is double counted
+    used_answer = zeros(1, 4);
+    used_board = zeros(1, 4);
 
-        % Take care of 3s.
-        for column = 1:4
-            if (board(row, column) == answer(column))
-                corrects(row, column_corrects) = 3;
-                column_corrects = column_corrects + 1;
-                used_answer(column) = 1;
-                used_board(column) = 1;
-            end
+    % Take care of 3s.
+    for column = 1:4
+        if (board(row, column) == answer(column))
+            corrects(corrects_index) = 3;
+            corrects_index = corrects_index + 1;
+            used_answer(column) = 1;
+            used_board(column) = 1;
         end
-        
-        % Take care of 2s
-        for column_board = 1:4
-            if used_board(column_board)
+    end
+    
+    % Take care of 2s
+    for column_board = 1:4
+        if used_board(column_board)
+            continue;
+        end
+
+        % Use a linear search to determine if the current 
+        correct = 0;
+        for column_answers = 1:4
+            % Do not double count
+            if used_answer(column_answers)
                 continue;
             end
-
-            % Use a linear search to determine if the current 
-            correct = 0;
-            for column_answers = 1:4
-                % Do not double count
-                if used_answer(column_answers)
-                    continue;
-                end
-                if board(row, column_board) == answer(column_answers)
-                    correct = 1;
-                    used_answer(column_answers) = 1;
-                    break;
-                end
+            if board(row, column_board) == answer(column_answers)
+                correct = 1;
+                used_answer(column_answers) = 1;
+                break;
             end
+        end
 
-            % If the linear search found the element, add it to the correct
-            if correct
-                corrects(row, column_corrects) = 2;
-                column_corrects = column_corrects + 1;
-            end
-
+        % If the linear search found the element, add it to the correct
+        if correct
+            corrects(corrects_index) = 2;
+            corrects_index = corrects_index + 1;
         end
 
     end
@@ -191,9 +183,13 @@ end
 
 function over = game_over(board, answer, row_number)
     % Determines whether or not the game is over
+    % board - user game board
+    % answer - the correct color sequence
+    % row_number - the row that the player is currently editing
+    % Returns whether or not the game is over
 
     % Case where the player loses
-    if row_number >= length(board)
+    if row_number >= length(board) + 1
         over = 1;
     elseif row_number == 1
         over = 0;
