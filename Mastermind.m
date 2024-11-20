@@ -124,35 +124,26 @@ function corrects = get_num_corrects(board, row, answer)
     % board - user game board
     % row - the row in the board to analyze
     % answer - the correct sequence
-    % Returns the matrix of the same size as the board, with:
-    % 1 indicating incorrect
-    % 2 indicating correct color but not position
-    % 3 indication correct color and position
-    % The numbers above coorospond to their position in the spritesheet
+    % Returns the 1x2 matrix where the first index is the number that are
+    % in the correct spot and the second number are the number that are in
+    % the solution but not in the correct position
 
-    corrects = ones([1, 4]);
-    
-
-    % Index in the column array, we move left to right regardless of
-    % where we find matches such that the corrects vector ends up being
-    % sorted in non ascending order
-    corrects_index = 1;
+    corrects = zeros([1, 2]);
 
     % Logical array to make sure that nothing is double counted
     used_answer = zeros(1, 4);
     used_board = zeros(1, 4);
 
-    % Take care of 3s.
+    % Take care of correct position
     for column = 1:4
         if (board(row, column) == answer(column))
-            corrects(corrects_index) = 3;
-            corrects_index = corrects_index + 1;
+            corrects(1) = corrects(1) + 1;
             used_answer(column) = 1;
             used_board(column) = 1;
         end
     end
     
-    % Take care of 2s
+    % Take care of incorrect position but in the board
     for column_board = 1:4
         if used_board(column_board)
             continue;
@@ -174,8 +165,7 @@ function corrects = get_num_corrects(board, row, answer)
 
         % If the linear search found the element, add it to the correct
         if correct
-            corrects(corrects_index) = 2;
-            corrects_index = corrects_index + 1;
+            corrects(2) = corrects(2) + 1;
         end
 
     end
