@@ -7,36 +7,35 @@ clear
 
 
 % Numbers correspond to the index in the spritesheet
-EMPTY = 1;
-BLUE = 4;
-GREEN = 5;
-ORANGE = 6;
-PINK = 7;
-PURPLE = 8;
-RED = 9;
-CYAN = 10;
-YELLOW = 11;
-BLANK = 12;
+blank = 1;
+red = 2;
+yellow = 3;
+green = 4;
+blue = 5;
+purple = 6;
+black = 7;
+white = 8;
+empty = 32;
 
 % Least and Greatest out of all of the colors
-MIN_COLOR = 4;
-MAX_COLOR = 11;
+MIN_COLOR = 2;
+MAX_COLOR = 8;
 
 
 
-N_ROWS = 12;
-board = ones(N_ROWS, 4, 'int32');
+N_ROWS = 10;
+board = ones(N_ROWS, 4, 'int16');
 
 % The correct sequence, randomly generated.
 answer = randi(MAX_COLOR - MIN_COLOR + 1, [1, 4]) + MIN_COLOR - 1;
 
-
+answer
 % Create simpleGameEngine object
-ZOOM = 1.9;
-SPRITE_WIDTH = 72;
-SPRITE_HEIGHT = 58;
+ZOOM = 5;
+SPRITE_WIDTH = 16;
+SPRITE_HEIGHT = 16;
 BACKGROUND_COLOR = [255, 255, 255];
-current_scene = simpleGameEngine('Mastermind.png', SPRITE_HEIGHT, SPRITE_WIDTH, ZOOM, BACKGROUND_COLOR);
+current_scene = simpleGameEngine('SDP_Project_SpriteSheet2.png', SPRITE_HEIGHT, SPRITE_WIDTH, ZOOM, BACKGROUND_COLOR);
 
 
 % The row that the player is currently adjusting
@@ -44,10 +43,10 @@ current_row = 1;
 
 % The matrix that represents the right side of the game -- whether or not
 % the player is correct in their final decisions
-correct = ones(size(board));
+correct = zeros([N_ROWS, 2]);
 
 % The matrix that represents the player's choices
-board(1, :) = [MIN_COLOR, MIN_COLOR, MIN_COLOR, MIN_COLOR];
+board(1, :) = [blank, blank, blank, blank];
 % Draw the screen once before getting input
 update_screen(current_scene, board, correct);
 
@@ -62,7 +61,7 @@ while ~game_over(board, answer, current_row)
         break
     end
     
-    if mouse_row == current_row && mouse_column >= 1 && mouse_column <= 4 && mouse_button ~= 2
+    if mouse_row == current_row && mouse_column >= 1 && mouse_column <= 4 && mouse_button == 1
         % Mouse is clicked in the left hand side of the game area on the
         % current row
         
@@ -78,26 +77,18 @@ while ~game_over(board, answer, current_row)
             if board(current_row, mouse_column) > MAX_COLOR
                 board(current_row, mouse_column) = MIN_COLOR;
             end
-        else
-            board(current_row, mouse_column) = board(current_row, mouse_column) - 1;
-            if board(current_row, mouse_column) < MIN_COLOR
-                board(current_row, mouse_column) = MAX_COLOR;
-            end
         end
-    end
-
     % Condition to determine when the player is ready to move onto the next
-    % row. Currently is clicking on the next row.
-    % TODO - since the last row must be clicked in order to move on, the
-    % last guess cannot be submitted
-    if mouse_row == current_row + 1
+    % row.
+    elseif mouse_button == 3
+
         correct(current_row, :) = get_num_corrects(board, current_row, answer);
         current_row = current_row + 1;
-
         % Copy the row just submitted down to the next row if the game is
         % not over
         if ~game_over(board, answer, current_row)
             board(current_row, :) = board(current_row - 1, :);
+            
         end
     end
 
@@ -111,13 +102,29 @@ function update_screen(scene, board, correct)
     % Draws the current scene to the screen
     % scene - the simpleGameEngine object with the mastermind spritesheet
     % board - user game board
-    % correct - the right hand side of the game board that shows how the
-    %           user is correct with their guesses
+    % correct - a length(board)x2 matrix where correct(i, 1) = the number
+    % of correct guesses with the correct position in row i, and correct(i,
+    % 2) is the number of correct colors but wrong positions in row i.
 
-    dividor = ones(length(board), 1) * 12;
+    correct(:, 1) = correct(:, 1) .* 2 + 9;
+    correct(:, 2) = correct(:, 2) .* 2 + 10;
+
     
-    drawScene(scene, [board, dividor, correct]);
+    
+    drawScene(scene, [board, correct]);
 end
+
+% Game is over
+
+% If the player wins
+if (board(current_row-1) == answer)
+
+    fprintf("winner\n");
+else
+    fprintf("loser\n");
+
+end
+
 
 function corrects = get_num_corrects(board, row, answer)
     % Determines the number of correct user inputs
@@ -137,7 +144,7 @@ function corrects = get_num_corrects(board, row, answer)
     % Take care of correct position
     for column = 1:4
         if (board(row, column) == answer(column))
-            corrects(1) = corrects(1) + 1;
+            corrects(2) = corrects(2) + 1;
             used_answer(column) = 1;
             used_board(column) = 1;
         end
@@ -165,7 +172,7 @@ function corrects = get_num_corrects(board, row, answer)
 
         % If the linear search found the element, add it to the correct
         if correct
-            corrects(2) = corrects(2) + 1;
+            corrects(1) = corrects(1) + 1;
         end
 
     end
