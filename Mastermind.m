@@ -29,7 +29,7 @@ board = ones(N_ROWS, 4, 'int16');
 % The correct sequence, randomly generated.
 answer = randi(MAX_COLOR - MIN_COLOR + 1, [1, 4]) + MIN_COLOR - 1;
 
-answer
+answer = [red, red, red, red];
 % Create simpleGameEngine object
 ZOOM = 5;
 SPRITE_WIDTH = 16;
@@ -117,12 +117,18 @@ end
 % Game is over
 
 % If the player wins
-if (board(current_row-1) == answer)
+win = 0;
+for row_number = 1:N_ROWS
+    if correct(row_number, 2) == 4
+        win = 1;
+        break;
+    end
+end
 
-    fprintf("winner\n");
+if win
+    fprintf("Winner\n");
 else
-    fprintf("loser\n");
-
+    fprintf("Loser\n");
 end
 
 
