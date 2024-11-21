@@ -24,6 +24,8 @@ MAX_COLOR = 8;
 
 
 N_ROWS = 10;
+
+% The board that represents the players guesses
 board = ones(N_ROWS, 4, 'int16');
 
 % The correct sequence, randomly generated.
@@ -45,8 +47,6 @@ current_row = 1;
 % the player is correct in their final decisions
 correct = zeros([N_ROWS, 2]);
 
-% The matrix that represents the player's choices
-board(1, :) = [blank, blank, blank, blank];
 % Draw the screen once before getting input
 update_screen(current_scene, board, correct);
 
@@ -65,9 +65,7 @@ while ~game_over(board, answer, current_row)
         % Mouse is clicked in the left hand side of the game area on the
         % current row
         
-        % Increment the color if it is left clicked, decrement if right
-        % clicked
-
+        % Increment the color if it is left clicked
         if mouse_button == 1
             board(current_row, mouse_column) = board(current_row, mouse_column) + 1;
 
@@ -97,23 +95,6 @@ while ~game_over(board, answer, current_row)
 
 end
 
-
-function update_screen(scene, board, correct)
-    % Draws the current scene to the screen
-    % scene - the simpleGameEngine object with the mastermind spritesheet
-    % board - user game board
-    % correct - a length(board)x2 matrix where correct(i, 1) = the number
-    % of correct guesses with the correct position in row i, and correct(i,
-    % 2) is the number of correct colors but wrong positions in row i.
-
-    correct(:, 1) = correct(:, 1) .* 2 + 9;
-    correct(:, 2) = correct(:, 2) .* 2 + 10;
-
-    
-    
-    drawScene(scene, [board, correct]);
-end
-
 % Game is over
 
 % If the player wins
@@ -131,6 +112,24 @@ else
     drawScene(current_scene, [19, 20, 21, 32, 26, 20, 27, 28, 25]);
 end
 
+
+function update_screen(scene, board, correct)
+    % Draws the current scene to the screen
+    % scene - the simpleGameEngine object with the mastermind spritesheet
+    % board - user game board
+    % correct - a length(board)x2 matrix where correct(i, 1) = the number
+    % of correct guesses with the correct position in row i, and correct(i,
+    % 2) is the number of correct colors but wrong positions in row i.
+
+    % Change the 0 - 4 numbers to coorospond to their positions in the
+    % spritesheet
+    correct(:, 1) = correct(:, 1) .* 2 + 9;
+    correct(:, 2) = correct(:, 2) .* 2 + 10;
+
+    
+    
+    drawScene(scene, [board, correct]);
+end
 
 function corrects = get_num_corrects(board, row, answer)
     % Determines the number of correct user inputs
