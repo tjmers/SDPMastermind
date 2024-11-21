@@ -29,7 +29,7 @@ board = ones(N_ROWS, 4, 'int16');
 % The correct sequence, randomly generated.
 answer = randi(MAX_COLOR - MIN_COLOR + 1, [1, 4]) + MIN_COLOR - 1;
 
-answer = [red, red, red, red];
+
 % Create simpleGameEngine object
 ZOOM = 5;
 SPRITE_WIDTH = 16;
@@ -126,9 +126,9 @@ for row_number = 1:N_ROWS
 end
 
 if win
-    fprintf("Winner\n");
+    drawScene(current_scene, [19, 20, 21, 32, 22, 23, 24, 25]);
 else
-    fprintf("Loser\n");
+    drawScene(current_scene, [19, 20, 21, 32, 26, 20, 27, 28, 25]);
 end
 
 
